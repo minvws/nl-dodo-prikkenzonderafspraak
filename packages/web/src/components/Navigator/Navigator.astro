@@ -1,0 +1,412 @@
+---
+import { ContentBlock } from '@components/ContentBlock';
+import { FeedbackAbstraction } from '@components/FeedbackAbstraction';
+import { Stack, Breadcrumbs, Layer, Retain } from '@dodo/ui/components';
+import { MastFoot } from '@components/MastFoot';
+import { CloseButton, Heading } from '@dodo/ui/elements';
+import type { HTMLAttributes } from 'astro/types';
+import type { LocationsPageProps } from 'src/utilities/api';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import type { Locale } from 'src/utilities/locale/translation';
+import { getLocaleFromURL } from 'src/utilities/locale/translation';
+import {
+	Filter,
+	LocationDetail,
+	Marker,
+	LocationList,
+	LocationListItem,
+} from '.';
+
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { getFeedbackUrl } from 'src/utilities/tracking/feedback';
+
+interface Props extends HTMLAttributes<'div'> {
+	pageData: LocationsPageProps;
+}
+
+const { class: className, pageData, ...attrs } = Astro.props;
+const currentPathName = Astro.url.pathname;
+const locale = getLocaleFromURL(currentPathName) as Locale;
+
+const siteSettings = await useSiteSettings({
+	locale,
+});
+---
+
+<div
+	class={`c-navigator${className ? ` | ${className}` : ''}`}
+	{...attrs}
+	data-module="navigator"
+	data-pathname={currentPathName}
+	data-locale={locale.id}
+	data-access-token={process.env.MAPBOX_ACCESS_TOKEN}
+>
+	<div class="c-navigator__wrap-sidebar" data-module-bind="navigator__sidebar">
+		{
+			pageData.hero ? (
+				<div class="c-navigator__wrap-hero" data-module-bind="navigator__hero">
+					<Stack>
+						<Breadcrumbs items={pageData.breadcrumbs} />
+						<Heading level={1} styledAs={2}>
+							{pageData.hero.title}
+						</Heading>
+						<Stack class="has__list-styled">
+							<ContentBlock value={pageData.hero.content} />
+						</Stack>
+						<img
+							data-pagefind-meta="image[src]"
+							src={pageData.hero.image.src}
+							alt=""
+							class="c-navigator__hero-image"
+						/>
+					</Stack>
+				</div>
+			) : null
+		}
+		<div class="c-navigator__wrap-filter-list" data-pagefind-ignore="all">
+			<div
+				class="c-navigator__wrap-filter"
+				data-module-bind="navigator__wrap-filter"
+			>
+				<Filter pageData={pageData} />
+			</div>
+			<div class="c-navigator__wrap-list">
+				<LocationList data-module-bind="navigator__list">
+					<li data-loading>{pageData.result.loading}</li>
+					<li data-no-result hidden>
+						{pageData.result.noResult}
+					</li>
+				</LocationList>
+			</div>
+		</div>
+		{
+			pageData?.showFeedback ? (
+				<Layer>
+					<Retain>
+						<FeedbackAbstraction
+							name="Prikken locations list"
+							url={getFeedbackUrl(siteSettings.feedback.url, {
+								source: pageData.type,
+								advice: pageData.slug,
+							})}
+						/>
+					</Retain>
+				</Layer>
+			) : null
+		}
+		<MastFoot locale={locale} />
+	</div>
+
+	<div class="c-navigator__wrap-map" data-pagefind-ignore="all">
+		<CloseButton
+			class="c-navigator__map-close"
+			data-module-bind="navigator__map-close"
+		/>
+		<div
+			class="c-navigator__map"
+			id="map"
+			data-module-bind="navigator_map"
+			tabindex="-1"
+		>
+		</div>
+	</div>
+
+	<div
+		class="c-navigator__wrap-detail"
+		data-module-bind="navigator__detail-pane"
+		data-pagefind-ignore="all"
+	>
+		<div class="c-navigator__detail" data-module-bind="navigator__detail">
+			<CloseButton
+				class="c-navigator__detail-close"
+				data-module-bind="navigator__detail-close"
+			/>
+			<div
+				class="c-navigator__detail-scroller"
+				data-module-bind="navigator__detail-scroller"
+			>
+				<Stack>
+					<Stack class="c-navigator__detail-inner">
+						<div
+							class="c-navigator__detail-target"
+							data-module-bind="navigator__detail-target"
+						>
+						</div>
+						<FeedbackAbstraction
+							url={getFeedbackUrl(siteSettings.feedback.url, {
+								source: pageData.type,
+								advice: pageData.slug,
+							})}
+							name="Prikken detail"
+						/>
+					</Stack>
+				</Stack>
+			</div>
+		</div>
+	</div>
+
+	<template data-module-bind="navigator__list-item">
+		<LocationListItem pageData={pageData} isTemplate />
+	</template>
+
+	<template data-module-bind="navigator__detail__template">
+		<LocationDetail pageData={pageData} />
+	</template>
+
+	<template data-module-bind="map__marker">
+		<Marker openLabel={pageData.location.openingHours.openNow} />
+	</template>
+
+	<template data-module-bind="map__marker-user">
+		<img
+			class="c-navigator__marker-user"
+			src="/images/map/marker-user.svg"
+			alt=""
+		/>
+	</template>
+</div>
+
+<script>
+	import mapboxgl from 'mapbox-gl';
+	import { Navigator } from './scripts/navigator';
+	const navigatorElement = document.querySelector(
+		'[data-module="navigator"]',
+	) as HTMLDivElement;
+
+	// get mapbox access token
+	mapboxgl.accessToken = navigatorElement.dataset.accessToken;
+
+	const navigator = new Navigator(navigatorElement);
+	navigator.init();
+</script>
+
+<style lang="scss">
+	@use '@dodo/ui/styles/primitives/responsive';
+	@use '@dodo/ui/styles/tools/rem';
+
+	.c-navigator {
+		--navigator__padding: var(--space-4);
+		--navigator__padding-block: var(--navigator__padding);
+		--navigator__padding-inline: var(--navigator__padding);
+		--navigator__block-size: 100vh;
+		--navigator__block-size: 100svh;
+		--navigator__max-block-size: var(--navigator__block-size);
+		--navigator__popover-spacing: var(--space-4);
+		--navigator__popover-radii: var(--radii-milli);
+		--navigator__popover-elevation: var(--elevation-frost);
+		--navigator__masthead-offset: var(--theme__masthead-top-block-size);
+		display: grid;
+		grid-template-rows: var(--navigator__template-rows, 1fr);
+		grid-template-columns: var(--navigator__template-columns, 1fr);
+		block-size: 100%;
+		max-block-size: var(--navigator__max-block-size);
+		padding-block-start: var(
+			--navigator__padding-block-start,
+			var(--theme__masthead-top-block-size)
+		);
+		background-color: var(--theme-bg-base);
+	}
+
+	.c-navigator__wrap-hero {
+		padding-block: var(--navigator__padding-block);
+		padding-inline: var(--navigator__padding-inline);
+		background-color: var(--theme-bg-base);
+	}
+
+	.c-navigator__hero-image {
+		display: none;
+	}
+
+	.c-navigator__wrap-sidebar {
+		position: relative;
+		z-index: 2;
+		grid-area: 1 / 1 / 2 / 2;
+		padding-block-end: env(safe-area-inset-bottom);
+		overflow: auto;
+		background-color: var(--color-white);
+
+		// prevent scrolling when menu is open
+		:global(.has-open-menu) & {
+			overflow: hidden;
+		}
+
+		@media (--mq-wide) {
+			z-index: 3;
+		}
+	}
+
+	.c-navigator__wrap-detail {
+		position: relative;
+		z-index: 3;
+		display: flex;
+		grid-area: 1 / 1 / 2 / 2;
+		max-block-size: var(--navigator__max-block-size);
+		pointer-events: none;
+		overflow: hidden;
+		// background-color: red;
+		@media (--mq-wide) {
+			z-index: 2;
+			overflow: unset;
+		}
+		&.is-active {
+			pointer-events: auto;
+		}
+	}
+
+	.c-navigator__detail {
+		--navigator__detail-padding-block: var(--space-4);
+		--navigator__detail-padding-inline: var(--space-4);
+		position: relative;
+		box-shadow: var(--navigator__popover-elevation);
+		padding-block: var(--navigator__popover-spacing);
+		padding-inline: var(--navigator__popover-spacing);
+		overflow: hidden;
+		transition: transform 300ms;
+		transform: translateY(100%);
+		will-change: transform;
+		visibility: hidden;
+		background-color: var(--theme-bg-base);
+
+		@media (--mq-wide) {
+			transform: translateX(0%);
+			background-color: revert;
+			box-shadow: unset;
+		}
+
+		.is-active & {
+			transform: translateY(0);
+			@media (--mq-wide) {
+				transform: translateX(100%);
+			}
+		}
+
+		.is-visible & {
+			visibility: visible;
+		}
+	}
+
+	.c-navigator__detail-scroller {
+		position: relative;
+		height: 100%;
+		overflow: auto;
+		z-index: 1;
+		background-color: var(--color-white);
+		border-radius: var(--navigator__popover-radii);
+
+		@media (--mq-wide) {
+			box-shadow: var(--elevation-frost--medium);
+		}
+
+		@media (--mq-large-until) {
+			box-shadow: var(--elevation-frost--medium);
+		}
+	}
+
+	.c-navigator__detail-inner {
+		padding-inline: var(--navigator__detail-padding-inline);
+		padding-block-end: var(--navigator__detail-padding-block);
+	}
+
+	.c-navigator__detail-close {
+		position: absolute;
+		inset-block-start: calc(
+			var(--navigator__detail-padding-block) + var(--navigator__popover-spacing)
+		);
+		inset-inline-end: calc(
+			var(--scrollbar__inline-size) + var(--navigator__detail-padding-inline) +
+				var(--navigator__popover-spacing)
+		);
+		z-index: 3;
+		will-change: transform;
+	}
+
+	.c-navigator__wrap-map {
+		--navigator__map-radii: var(--navigator__popover-radii);
+		--navigator__map-spacing: var(--navigator__popover-spacing);
+		--navigator__map-elevation: var(--navigator__popover-elevation);
+		position: relative;
+		grid-area: 1 / 1 / 2 / 2;
+		z-index: 1;
+		padding-block: var(--navigator__map-spacing);
+		padding-inline: var(--navigator__map-spacing);
+		background-color: var(--theme-bg-base);
+
+		.c-navigator.show-map & {
+			z-index: 2;
+		}
+		.c-navigator.elevate-map & {
+			z-index: 5;
+		}
+	}
+
+	/**
+	 * 1. mapbox sets a hard height on the container so we need to override it
+	 */
+	.c-navigator__map {
+		block-size: 100% !important; /* [1] */
+		border-radius: var(--navigator__map-radii);
+		box-shadow: var(--navigator__map-elevation);
+	}
+
+	.c-navigator__map-close {
+		position: absolute;
+		inset-block-start: calc(var(--space-4) + var(--navigator__map-spacing));
+		inset-inline-end: calc(var(--space-4) + var(--navigator__map-spacing));
+		z-index: 3;
+	}
+
+	.c-navigator__wrap-filter-list {
+		min-block-size: calc(
+			var(--navigator__block-size) - var(--navigator__masthead-offset, 0px) -
+				var(--navigator__hero-size, 0px)
+		);
+	}
+
+	.c-navigator__wrap-filter {
+		padding-block: var(--navigator__padding-block);
+		padding-inline: var(--navigator__padding-inline);
+		border-block-end: 1px solid var(--color-grijs-2);
+		background-color: var(--color-white);
+
+		@media (--mq-block-small) {
+			& {
+				position: sticky;
+				top: 0;
+			}
+		}
+	}
+
+	.c-navigator__wrap-list {
+		padding-inline: var(--navigator__padding-inline);
+	}
+
+	@media (--mq-large) {
+		.c-navigator {
+			--navigator__template-columns: 480px 1fr;
+			--navigator__padding: var(--space-6);
+		}
+
+		.c-navigator__wrap-map {
+			--navigator__map-radii: 0px;
+			--navigator__map-spacing: 0px;
+			--navigator__map-elevation: none;
+			grid-area: auto;
+			display: block;
+		}
+
+		// Increase specificity by 1,
+		.c-navigator__map-close.c-navigator__map-close {
+			display: none;
+		}
+	}
+
+	@media (--mq-huge) {
+		.c-navigator {
+			--navigator__masthead-offset: var(--theme__masthead-top-block-size);
+			--navigator__max-block-size: calc(
+				var(--navigator__block-size) - var(--theme__masthead-block-size, 0px)
+			);
+			--navigator__padding-block-start: 0px;
+		}
+	}
+</style>

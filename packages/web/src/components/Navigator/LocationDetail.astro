@@ -1,0 +1,419 @@
+---
+import { Attribute, Stack } from '@dodo/ui/components';
+import { ContentBlock } from '@components/ContentBlock';
+import {
+	MarkerIcon,
+	Button,
+	Icon,
+	Tag,
+	Heading,
+	Link,
+} from '@dodo/ui/elements';
+import type { HTMLAttributes } from 'astro/types';
+import type { LocationsPageProps } from 'src/utilities/api';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import { getLocaleFromURL } from 'src/utilities/locale/translation';
+import type { Locale } from 'src/utilities/locale/translation';
+
+interface Props extends HTMLAttributes<'div'> {
+	pageData: LocationsPageProps;
+}
+
+const { class: className, pageData, ...attrs } = Astro.props;
+
+const locale = getLocaleFromURL(Astro.url.pathname) as Locale;
+const siteSettings = await useSiteSettings({ locale });
+
+const note = pageData.location.note;
+---
+
+<div
+	class={`c-location-detail${className ? ` | ${className}` : ''}`}
+	{...attrs}
+	itemscope
+	itemtype="https://schema.org/Place"
+	data-label-closed={pageData.location.openingHours.closed}
+>
+	<div class="u-visually-hidden">
+		{note?.pzaInfo?.icon ? <Icon name={note.pzaInfo.icon} /> : null}
+		{note?.pmaInfo?.icon ? <Icon name={note.pmaInfo.icon} /> : null}
+		{note?.pzaPmaInfo?.icon ? <Icon name={note.pzaPmaInfo.icon} /> : null}
+		<Icon name="copy" />
+	</div>
+	<hgroup class="c-location-detail__hgroup">
+		<Stack gap={3}>
+			<Heading level={2} styledAs={3} tabindex="-1">
+				<span data-city>replace city</span>
+				<span class="c-location-detail__name" data-name></span>
+			</Heading>
+			<div
+				class="c-location-detail__wrap-labels"
+				data-appointment-type="pza|pma"
+			>
+				<Tag data-appointment-type="pza" icon="walking">
+					{siteSettings.appointmentTypes.pza}
+				</Tag>
+				<span class="u-color--black" data-appointment-type="pza&pma">
+					{siteSettings.genericLabels.and}
+				</span>
+				<Tag data-appointment-type="pma" icon="appointment">
+					{siteSettings.appointmentTypes.pma}
+				</Tag>
+			</div>
+		</Stack>
+	</hgroup>
+
+	<div class="c-location-detail__body">
+		<Stack gap={10}>
+			<div>
+				<Stack gap={3}>
+					<button
+						type="button"
+						class="c-location-detail__wrap-image"
+						data-wrap-image
+						data-module-bind="navigator__map-preview"
+					>
+						<img class="c-location-detail__image" alt="" data-image-map />
+						<MarkerIcon
+							class="c-location-detail__marker-icon"
+							name="map-marker-pza"
+						/>
+						<MarkerIcon
+							class="c-location-detail__marker-icon"
+							name="map-marker-pma"
+						/>
+					</button>
+
+					<Attribute
+						icon="marker"
+						itemscope
+						itemtype="https://schema.org/PostalAddress"
+					>
+						<span itemprop="streetAddress" data-address-short>
+							<mark>replace address short</mark>
+						</span>
+						<br />
+						<span itemprop="postalCode" data-zipcode>
+							<mark>replace zipcode</mark>
+						</span>&nbsp;<span itemprop="addressLocality" data-city>
+							<mark>replace city</mark>
+						</span>
+					</Attribute>
+
+					<section>
+						<Stack gap={1} data-appointment-type="!pza">
+							<Button
+								type="button"
+								data-module-bind="location__button-copy"
+								icon="copy"
+								iconPosition="leading"
+								data-label-copy={pageData.location.copyButton.copy}
+								data-label-copied={pageData.location.copyButton.copied}
+								full
+							>
+								{pageData.location.copyButton.copy}
+							</Button>
+
+							<div class="u-color--grijs-6">
+								<ContentBlock value={pageData.location.instructions} />
+							</div>
+						</Stack>
+
+						<Stack gap={1} data-appointment-type="pza&pma">
+							<Button
+								type="button"
+								data-module-bind="location__button-copy"
+								icon="copy"
+								iconPosition="leading"
+								data-label-copy={pageData.location.copyButton.copy}
+								data-label-copied={pageData.location.copyButton.copied}
+								full
+							>
+								{pageData.location.copyButton.copy}
+							</Button>
+
+							<div class="u-color--grijs-6">
+								<ContentBlock value={pageData.location.instructions} />
+							</div>
+						</Stack>
+					</section>
+					{
+						note ? (
+							<section>
+								<Stack>
+									<b data-appointment-type="pza|pma">{note.title}</b>
+									<Stack gap={4} as="ul" role="list">
+										{note.pzaInfo && (
+											<li data-appointment-type="!pza">
+												<Attribute icon={note.pzaInfo.icon} variant="humble">
+													<Stack gap={2}>
+														<ContentBlock value={note.pzaInfo.label} />
+													</Stack>
+												</Attribute>
+											</li>
+										)}
+										{note.pmaInfo && (
+											<li data-appointment-type="!pma">
+												<Attribute icon={note.pmaInfo.icon} variant="humble">
+													<Stack gap={2}>
+														<ContentBlock value={note.pmaInfo.label} />
+													</Stack>
+												</Attribute>
+											</li>
+										)}
+										{note.pzaPmaInfo && (
+											<li data-appointment-type="pza&pma">
+												<Attribute icon={note.pzaPmaInfo.icon} variant="humble">
+													<Stack gap={2}>
+														<ContentBlock value={note.pzaPmaInfo.label} />
+													</Stack>
+												</Attribute>
+											</li>
+										)}
+									</Stack>
+								</Stack>
+							</section>
+						) : null
+					}
+				</Stack>
+			</div>
+
+			<section data-appointment-type="pza">
+				<Stack>
+					<div class="c-location-detail__heading-openinghours">
+						<Heading level={3}>
+							{pageData.location.openingHours.title}
+						</Heading>
+						<div class="opening-hours" data-openinghours>
+							<span
+								class="u-color--accent-safarigroen"
+								data-openinghours-opennow
+							>
+								{pageData.location.openingHours.openNow}
+							</span>
+							<span
+								class="u-color--accent-safarigroen"
+								data-openinghours-opentoday
+							>
+								{pageData.location.openingHours.openToday}
+							</span>
+							<span class="u-color--grijs-6" data-openinghours-openfrom>
+								{pageData.location.openingHours.openFrom}{' '}
+								<span data-openinghours-from></span>
+							</span>
+							<span class="u-color--grijs-6" data-openinghours-closed>
+								{pageData.location.openingHours.closed}
+							</span>
+						</div>
+					</div>
+
+					<div data-timetable>
+						<Stack>
+							<p data-unknown-openinghours>
+								{pageData.location.openingHours.unknownOpeningHours}
+							</p>
+							{
+								pageData?.location?.openingHours?.content ? (
+									<ContentBlock
+										value={pageData.location.openingHours.content}
+										data-known-openinghours
+									/>
+								) : null
+							}
+							<table class="c-location-detail__table">
+								<tbody
+									data-module-bind="location__timetable-row"
+									data-known-openinghours
+								>
+								</tbody>
+							</table>
+
+							{
+								locale.id === 'nl' ? (
+									<div>
+										<p>{pageData.location.openingHours.feedback.content}</p>
+										<Link
+											href={'https://minvws.typeform.com/to/QpJVk377'}
+											data-feedback-timetable
+											isExternal
+										>
+											{pageData.location.openingHours.feedback.label}
+										</Link>
+									</div>
+								) : null
+							}
+						</Stack>
+					</div>
+				</Stack>
+			</section>
+
+			{
+				pageData.about && pageData.about.items ? (
+					<section>
+						<Stack>
+							<Heading level={3}>{pageData.about.title}</Heading>
+							<div>
+								<Stack gap={2} as="ul" role="list">
+									{pageData.about.items
+										.filter((item) => item.label)
+										.map((item) => (
+											<li>
+												<Attribute icon={item.icon}>
+													<ContentBlock value={item.label} />
+												</Attribute>
+											</li>
+										))}
+								</Stack>
+							</div>
+						</Stack>
+					</section>
+				) : null
+			}
+
+			{
+				pageData.bring && pageData.bring.items ? (
+					<section>
+						<Stack>
+							<Heading level={3}>{pageData.bring.title}</Heading>
+							<div>
+								<Stack gap={2} as="ul" role="list">
+									{pageData.bring.items
+										.filter((item) => item.label)
+										.map((item) => (
+											<li>
+												<Attribute icon={item.icon}>
+													<ContentBlock value={item.label} />
+												</Attribute>
+											</li>
+										))}
+								</Stack>
+							</div>
+						</Stack>
+					</section>
+				) : null
+			}
+			{
+				pageData.expectations ? (
+					<section>
+						<Stack class="has__list-styled">
+							<Heading level={3}>{pageData.expectations.title}</Heading>
+							<ContentBlock value={pageData.expectations.content} />
+						</Stack>
+					</section>
+				) : null
+			}
+		</Stack>
+	</div>
+</div>
+
+<style lang="scss">
+	@use '@dodo/ui/styles/primitives/responsive';
+	@use '@dodo/ui/styles/tools/a11y';
+
+	.c-location-detail {
+		block-size: 100%;
+	}
+
+	.c-location-detail__hgroup {
+		padding-block: var(--navigator__detail-padding-block, var(--space-4));
+		background-color: var(--color-white);
+
+		// create space for close button so that the title wont overlap
+		&::before {
+			float: right;
+			inline-size: calc(1.2em + var(--space-1) * 2 + 2px);
+			aspect-ratio: 1/1;
+			content: '';
+		}
+
+		@media (--mq-block-small) {
+			& {
+				position: sticky;
+				top: 0;
+				z-index: 1;
+			}
+		}
+	}
+
+	.c-location-detail__name {
+		display: block;
+		font-weight: normal;
+	}
+
+	.c-location-detail__wrap-labels {
+		display: flex;
+		gap: var(--space-2);
+	}
+
+	.c-location-detail__body {
+	}
+
+	.c-location-detail__wrap-image {
+		position: relative;
+		display: block;
+		block-size: var(--space-40);
+		inline-size: 100%;
+		padding: 0;
+		overflow: hidden;
+		border-radius: var(--radii-milli);
+		background-color: var(--color-grijs-2);
+		cursor: pointer;
+
+		&:focus-visible {
+			@include a11y.focusring;
+		}
+	}
+
+	.c-location-detail__image {
+		position: absolute;
+		inset: 0;
+		block-size: 100%;
+		inline-size: 100%;
+		object-fit: cover;
+	}
+
+	.c-location-detail__marker-icon {
+		position: absolute;
+		inset: 50%;
+		inline-size: var(--space-12);
+		block-size: auto;
+		transform: translate(-50%, calc(-50% - 1rem));
+	}
+
+	.c-location-detail__heading-openinghours {
+		display: flex;
+		flex-flow: row wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: var(--space-1);
+	}
+
+	.c-location-detail__table {
+		inline-size: 100%;
+		border-collapse: collapse;
+
+		:global(tr:nth-child(odd)) {
+			background-color: var(--color-grijs-1);
+		}
+
+		:global(td) {
+			padding-block: var(--space-1);
+			padding-inline: var(--space-2);
+			vertical-align: top;
+		}
+
+		:global(td::first-letter) {
+			text-transform: capitalize;
+		}
+
+		:global(tr:first-child) {
+			font-weight: bold;
+		}
+		:global(td:last-child) {
+			text-align: end;
+			:global(> span) {
+				display: block;
+			}
+		}
+	}
+</style>

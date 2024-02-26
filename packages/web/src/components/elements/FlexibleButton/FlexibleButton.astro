@@ -1,0 +1,43 @@
+---
+import { Button } from '@dodo/ui/elements';
+import { type ButtonProps } from '../../../utilities/api/queries/buttons';
+import { parseLink } from 'src/utilities/helpers/link';
+import { getFullPageUrl } from 'src/utilities/helpers/page-subfolder';
+import { getLocaleFromURL } from 'src/utilities/locale/translation';
+import { type Animations } from '@dodo/ui/primitives';
+import { isExternalUrl } from 'src/utilities/helpers/external-url';
+
+interface Props extends ButtonProps {
+	className?: string;
+	interactionIconAnimation?: Animations;
+}
+
+const {
+	className,
+	label,
+	slugCollection,
+	icon,
+	variant,
+	iconPosition,
+	interactionIconAnimation,
+} = Astro.props;
+const locale = getLocaleFromURL(Astro.url.pathname);
+
+const href = slugCollection?.asset
+	? slugCollection.asset
+	: parseLink(getFullPageUrl(slugCollection), locale);
+const isExternal =
+	isExternalUrl(href) || slugCollection?.asset ? true : undefined;
+---
+
+<Button
+	class={`classname${className ? ` | ${className}` : ''}`}
+	href={href}
+	isExternal={isExternal}
+	icon={icon}
+	variant={variant}
+	iconPosition={iconPosition}
+	interactionIconAnimation={interactionIconAnimation}
+>
+	{label}
+</Button>

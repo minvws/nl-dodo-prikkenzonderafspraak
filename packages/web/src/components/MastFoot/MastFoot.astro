@@ -1,0 +1,85 @@
+---
+import { Heading } from '@dodo/ui/elements';
+import { ContentBlock } from '@components/ContentBlock';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import type { Locale } from 'src/utilities/locale/translation';
+import { Layer, Stack, Retain, GridFluid, LinkList } from '@dodo/ui/components';
+import { parseLink } from 'src/utilities/helpers/link';
+import { isExternalUrl } from 'src/utilities/helpers/external-url';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const siteSettings = await useSiteSettings({
+	locale,
+});
+---
+
+<footer class="c-mastfoot" role="contentinfo">
+	<Layer as="div" class="c-mastfoot__layer">
+		<Retain>
+			<Heading class="u-visually-hidden">
+				{siteSettings.mastfoot.title}
+			</Heading>
+			<GridFluid class="c-mastfoot__grid">
+				{
+					siteSettings.mastfoot.columns.map((column) => (
+						<Stack gap={4}>
+							<Heading level={3}>{column.title}</Heading>
+							{column.content ? <ContentBlock value={column.content} /> : null}
+							{column.internalPageCollection ? (
+								<LinkList
+									items={column.internalPageCollection.map((item) => ({
+										label: item.label ? item.label : item.link.label,
+										href: parseLink(item.link.slug, locale),
+										external: isExternalUrl(item.link.slug),
+									}))}
+								/>
+							) : null}
+						</Stack>
+					))
+				}
+			</GridFluid>
+		</Retain>
+	</Layer>
+</footer>
+
+<style lang="scss">
+	@use '@dodo/ui/styles/tools/rem';
+	@use '@dodo/ui/styles/primitives/responsive';
+
+	.c-mastfoot {
+		--elevation-focusring: 2px dashed var(--color-white);
+		margin-block-start: auto;
+		background-color: var(--color-donkerblauw);
+		color: var(--color-white);
+
+		:global(h2),
+		:global(h3) {
+			color: currentColor;
+		}
+
+		:global(a) {
+			color: currentColor;
+		}
+	}
+
+	.c-mastfoot__layer {
+		--layer-padding-block-start: var(--space-10);
+
+		@media (--mq-large) {
+			--layer-padding-block-start: var(--space-8);
+		}
+	}
+
+	.c-mastfoot__grid {
+		--grid-fluid-min-item-size: var(--space-100);
+		--grid-fluid-gap: var(--space-10);
+
+		@media (--mq-large) {
+			--grid-fluid-gap: var(--space-14);
+		}
+	}
+</style>

@@ -1,0 +1,364 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+// @ts-ignore
+import Search from 'astro-pagefind/components/Search';
+import { Modal } from '@dodo/ui/components';
+import { Icon, ButtonTool } from '@dodo/ui/elements';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import { getLocaleFromURL } from 'src/utilities/locale/translation';
+
+interface Props extends HTMLAttributes<'div'> {}
+
+const { class: className, ...attrs } = Astro.props;
+const locale = getLocaleFromURL(Astro.url.pathname);
+const siteSettings = await useSiteSettings({ locale });
+---
+
+<c-finder class={`c-finder${className ? ` | ${className}` : ''}`} {...attrs}>
+	<ButtonTool
+		type="button"
+		id="finder-modal"
+		label={siteSettings.forms.search}
+		showLabel
+	>
+		<Icon name="looking-glass" />
+	</ButtonTool>
+
+	<Modal
+		id="finder-modal"
+		title={siteSettings.forms.search}
+		variant="highlight"
+	>
+		<Search id="c-search__pagefind" uiOptions={{ showSubResults: true }} />
+	</Modal>
+</c-finder>
+
+<script>
+	import { debounceQuick } from '@dodo/ui/helpers';
+	import { trackEvent } from 'src/utilities/tracking/piwik';
+
+	class Finder extends HTMLElement {
+		constructor() {
+			super();
+
+			/**
+			 * Wait for pagefind to load
+			 */
+			window.addEventListener('load', function () {
+				const searchElement = document.querySelector<HTMLInputElement>(
+					'.pagefind-ui__search-input',
+				);
+
+				const debouncedLog = debounceQuick((query) => {
+					if (query !== '') {
+						trackEvent('Search', 'query', query);
+					}
+				}, 1000);
+
+				searchElement.addEventListener('input', function () {
+					const query = searchElement.value;
+					debouncedLog(query);
+				});
+			});
+		}
+	}
+
+	customElements.define('c-finder', Finder);
+</script>
+
+<style is:global lang="scss">
+	@use '@dodo/ui/styles/tools/a11y';
+	@use '@dodo/ui/styles/tools/input';
+	@use '@dodo/ui/styles/primitives/responsive';
+	@use '@dodo/ui/styles/tools/button';
+
+	.pagefind-ui {
+		--pagefind-ui-font: var(--font-family);
+		--pagefind-ui-scale: 1;
+		--pagefind-ui-border: var(--color-grijs-4);
+		--c-search__item-border-color: transparent;
+		--c-search__input-padding: var(--space-4);
+		--c-search__input-center: calc(
+			(var(--font-lineheight-root) * 0.5rem) + var(--c-search__input-padding)
+		);
+		--c-search__input-icon-size: var(--space-6);
+		--c-search__result-padding: var(--space-4);
+		--c-search__result-mark-color: var(--color-poolblauw);
+		--c-search__result-nested-border-color: var(--color-ijsblauw);
+	}
+
+	/**
+	 * Styled by ID because we need to override pagefind's own styles
+	 */
+	#c-search__pagefind {
+		/**
+		 * 1. Add a little padding to the end of the list to have space for
+		 * the box-shadows
+		 */
+		.pagefind-ui__form {
+			padding-block-end: var(--space-1); /* [1] */
+
+			/**
+			 * Looking glass icon
+			 */
+			&::before {
+				/* unset pagefind stuff */
+				top: unset;
+				left: unset;
+				height: unset;
+				width: unset;
+				opacity: unset;
+				/* !unset pagefind stuff */
+				inset-block-start: var(--c-search__input-center);
+				inset-inline-start: var(--c-search__input-padding);
+				inline-size: var(--c-search__input-icon-size);
+				aspect-ratio: 1/1;
+				transform: translateY(-50%);
+				background-color: var(--color-diepblauw);
+				-webkit-mask-image: url('/images/icons/looking-glass.svg');
+				mask-image: url('/images/icons/looking-glass.svg');
+			}
+		}
+
+		/**
+		 * Search input
+		 */
+		.pagefind-ui__search-input {
+			/* unset pagefind stuff */
+			position: unset;
+			height: unset;
+			width: unset;
+			display: unset;
+			padding: unset;
+			background-color: unset;
+			border: unset;
+			border-radius: unset;
+			font-size: unset;
+			font-weight: unset;
+			/* !unset pagefind stuff */
+
+			@include input.scaffold();
+
+			padding-inline-start: calc(
+				var(--c-search__input-padding) * 2 + var(--c-search__input-icon-size)
+			);
+		}
+
+		/**
+		 * Clear/reset button
+		 */
+		.pagefind-ui__search-clear {
+			/* unset pagefind stuff */
+			top: unset;
+			height: unset;
+			right: unset;
+			padding: unset;
+			background-color: unset;
+			border-radius: unset;
+			font: unset;
+			/* !unset pagefind stuff */
+
+			inset-block-start: var(--c-search__input-center);
+			inset-inline-end: 0;
+			padding-inline-end: var(--c-search__input-padding);
+			transform: translateY(-50%);
+			outline: none;
+			font-size: var(--font-size-milli);
+			line-height: var(--line-height-milli);
+
+			&:focus {
+				@include a11y.focusring;
+			}
+
+			&.pagefind-ui__suppressed {
+				display: none;
+			}
+		}
+
+		/**
+		 * Results list
+		 */
+		.pagefind-ui__results {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-4);
+			padding-block-end: var(--space-1); /* [1] */
+		}
+
+		.pagefind-ui__result,
+		.pagefind-ui__result-nested {
+			/* unset pagefind stuff */
+			padding-left: unset;
+			padding-top: unset;
+			/* !unset pagefind stuff */
+
+			position: relative;
+			padding-block: var(
+				--c-search__result-padding-block,
+				var(--c-search__result-padding)
+			);
+			padding-inline: var(
+				--c-search__result-padding-inline,
+				var(--c-search__result-padding)
+			);
+			border: 1px solid var(--c-search__item-border-color);
+			border-radius: var(--radii-nano);
+			background-color: var(--color-white);
+			transition-property: border, box-shadow;
+			transition-duration: 300ms;
+			transition-timing-function: ease-in-out;
+			cursor: pointer;
+
+			mark {
+				font-weight: bold;
+				background-color: var(--c-search__result-mark-color);
+			}
+
+			&:focus-within:not(:has(.pagefind-ui__result-nested:focus-within)) {
+				@include a11y.focusring;
+			}
+
+			&:hover:not(:has(.pagefind-ui__result-nested:hover)) {
+				box-shadow: 0px 4px 0px 0px var(--color-donkerblauw);
+			}
+		}
+
+		.pagefind-ui__result {
+			position: relative;
+			align-items: start;
+			gap: var(--space-4);
+			border: 1px solid
+				var(--c-search__result-border-color, var(--c-search__item-border-color));
+			box-shadow: var(--elevation-frost);
+
+			&:hover:not(:has(.pagefind-ui__result-nested:hover)) {
+				--c-search__result-border-color: var(--color-donkerblauw);
+			}
+		}
+
+		.pagefind-ui__result-thumb {
+			&:empty {
+				display: none;
+			}
+
+			@media (--mq-small-until) {
+				display: none;
+			}
+		}
+
+		.pagefind-ui__result-inner {
+			margin-block-start: 0;
+		}
+
+		.pagefind-ui__result-title {
+			/* unset pagefind stuff */
+			display: unset;
+			font: unset;
+			margin: unset;
+			/* !unset pagefind stuff */
+			font-weight: bold;
+			font-size: var(--font-size-delta);
+			line-height: var(--line-height-delta);
+		}
+
+		.pagefind-ui__result-excerpt {
+			/* unset pagefind stuff */
+			display: unset;
+			font: unset;
+			margin: unset;
+			/* !unset pagefind stuff */
+
+			min-width: auto;
+			font-size: var(--font-size-root);
+			line-height: var(--font-lineheight-root);
+		}
+
+		.pagefind-ui__result-link {
+			outline: none;
+
+			&::after {
+				position: absolute;
+				content: '';
+				inset-block-start: 0;
+				inset-inline-start: 0;
+				inline-size: 100%;
+				block-size: 100%;
+			}
+
+			// &:focus-visible {
+			// 	@include a11y.focusring;
+			// }
+
+			&:hover {
+				text-decoration: none;
+			}
+
+			&::before {
+				display: none;
+			}
+		}
+
+		.pagefind-ui__result-nested {
+			--c-search__result-mark-color: var(--color-white);
+			--c-search__result-padding-block: var(--space-2);
+			position: relative;
+			margin-block-start: var(--space-4);
+			background-color: var(--color-ijsblauw);
+			border: 1px solid
+				var(
+					--c-search__result-nested-border-color,
+					var(--c-search__item-border-color)
+				);
+
+			&:hover {
+				--c-search__result-nested-border-color: var(--color-donkerblauw);
+			}
+
+			.pagefind-ui__result-title {
+				font-size: var(--font-size-root);
+				line-height: var(--font-lineheight-root);
+			}
+
+			.pagefind-ui__result-link {
+				position: static;
+				font: inherit;
+			}
+		}
+
+		/**
+		 * Load more button
+		 */
+		.pagefind-ui__button {
+			/* unset pagefind stuff */
+			margin-top: unset;
+			border: unset;
+			border-radius: unset;
+			height: unset;
+			padding: unset;
+			font-size: unset;
+			color: unset;
+			background: unset;
+			width: unset;
+			text-align: unset;
+			font-weight: unset;
+			/* !unset pagefind stuff */
+
+			@include button.scaffold();
+
+			--button-background-color: var(--color-donkerblauw);
+			--button-elevation-color: var(--color-diepblauw);
+
+			margin-block-start: var(--space-8);
+			justify-content: center;
+
+			&:hover {
+				--button-background-color: var(--color-diepblauw);
+				--button-elevation-color: var(--color-nachtblauw);
+			}
+
+			&:active {
+				--button-elevation-size: 0px;
+			}
+		}
+	}
+</style>

@@ -1,0 +1,17 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"baseUrl": "./src",
+		"rootDir": "./",
+		"outDir": "./dist",
+		"noEmit": false,
+		"target": "ESNext",
+		"types": ["vite/client"]
+	},
+	"include": [
+		"./node_modules/@sanity/base/types/**/*.ts",
+		"./sanity.d.ts",
+		"./**/*.ts",
+		"./**/*.tsx"
+	]
+}

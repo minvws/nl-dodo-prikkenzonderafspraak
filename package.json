@@ -1,0 +1,22 @@
+{
+	"name": "prikken-zonder-afspraak",
+	"private": true,
+	"scripts": {
+		"test": "npm run test --workspaces",
+		"web:dev": "npm run dev --workspace web",
+		"web:build": "npm run build --workspace web",
+		"web:preview": "npm run preview --workspace web",
+		"web:test": "npm run test --workspace web",
+		"cms:dev": "npm run dev --workspace cms",
+		"cms:deploy": "npm run deploy --workspace cms",
+		"cms:build": "npm run build-development --workspace cms",
+		"format": "npm run format:prettier",
+		"format:prettier": "prettier --write ."
+	},
+	"workspaces": [
+		"./packages/*"
+	],
+	"dependencies": {
+		"typescript": "^5.3.3"
+	}
+}

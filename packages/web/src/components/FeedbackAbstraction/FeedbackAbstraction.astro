@@ -1,0 +1,56 @@
+---
+import { type HTMLAttributes } from 'astro/types';
+import { Feedback } from '@dodo/ui/components';
+import { isExternalUrl } from 'src/utilities/helpers/external-url';
+import { getLocaleFromURL } from '@dodo/ui/helpers';
+
+interface Props extends HTMLAttributes<'div'> {
+	url: string;
+	name: string;
+}
+
+const { class: className, url, name, ...attrs } = Astro.props;
+const isExternal = isExternalUrl(url);
+const locale = getLocaleFromURL(Astro.url.pathname);
+---
+
+<>
+	{
+		locale.id === 'nl' || locale.id === 'en' ? (
+			<Feedback
+				class={`${className ? ` | ${className}` : ''}`}
+				isExternal={isExternal}
+				url={url}
+				name={name}
+				{...attrs}
+			/>
+		) : null
+	}
+</>
+
+<script>
+	import { trackEvent } from 'src/utilities/tracking/piwik';
+
+	const parent = document.querySelector(
+		'[data-module="feedback"]',
+	) as HTMLElement;
+
+	if (parent) {
+		const form = parent.querySelector(
+			'[data-module-bind="feedback__form"]',
+		) as HTMLFormElement;
+
+		form.addEventListener('submit', (event) => {
+			event.preventDefault;
+		});
+
+		form.addEventListener('change', () => {
+			const formData = new FormData(form);
+			const choice = formData.get('feedback-choice');
+			const pagePathName = document.querySelector('html').dataset.pagePathname;
+			const pageType = document.querySelector('html').dataset.pageType;
+
+			trackEvent('Button', choice.toString(), `${pageType} - ${pagePathName}`);
+		});
+	}
+</script>

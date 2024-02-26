@@ -1,0 +1,70 @@
+---
+import type { TaleCollectionProps } from 'src/utilities/api/queries';
+import { TaleAbstraction } from '.';
+import { Stack, Disclosure, Retain, Media } from '@dodo/ui/components';
+import { stringToSlug } from 'src/utilities/stringToSlug';
+import { Heading } from '@dodo/ui/elements';
+
+interface Props extends TaleCollectionProps {
+	asDisclosure?: boolean;
+}
+
+const { taleCollection, asDisclosure } = Astro.props;
+
+let headingLevel = 2 as 1 | 2 | 3 | 4 | 5 | 6;
+---
+
+<>
+	{
+		asDisclosure ? (
+			<Retain variant="text">
+				{taleCollection.map((tale) => {
+					if (tale._type === 'taleSection') {
+						headingLevel = 3;
+						return (
+							<Media image={tale.image} class="c-tale-section">
+								<Heading id={stringToSlug(tale.title)} level={2} styledAs={3}>
+									{tale.title}
+								</Heading>
+							</Media>
+						);
+					} else {
+						return (
+							<Disclosure
+								headingStyledAs={4}
+								accordeon
+								headingLevel={headingLevel}
+								label={tale.title}
+								id={stringToSlug(tale.title)}
+								itemscope
+								itemprop="mainEntity"
+								itemtype="https://schema.org/Question"
+							>
+								<TaleAbstraction
+									{...tale}
+									renderTitle={false}
+									anchorable={false}
+								/>
+							</Disclosure>
+						);
+					}
+				})}
+			</Retain>
+		) : (
+			<Stack class="c-tale" gap={14}>
+				{taleCollection.map((tale) => (
+					<TaleAbstraction {...tale} />
+				))}
+			</Stack>
+		)
+	}
+</>
+
+<style lang="scss">
+	.c-tale-section {
+		margin-block-end: var(--space-6);
+	}
+	.c-tale-section:not(:first-child) {
+		margin-block-start: var(--space-16);
+	}
+</style>

@@ -1,0 +1,77 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import type { Locale } from 'src/utilities/locale/translation';
+import { availableLocales } from 'src/utilities/locale/translation';
+import { getDataErrorPages, type ErrorPageProps } from 'src/utilities/api';
+import { Hero, Stack, Retain, Layer, Breadcrumbs } from '@dodo/ui/components';
+import { ContentBlock } from '@components/ContentBlock';
+import { FlexibleButton } from '@components/elements/FlexibleButton';
+
+export async function getStaticPaths() {
+	const collection = await getDataErrorPages();
+	return (
+		collection
+			// filter out unavailable locales
+			.filter(
+				(page: ErrorPageProps) =>
+					availableLocales.filter((locale) => locale.id === page.localeID)
+						.length,
+			)
+			.map((page: ErrorPageProps) => ({
+				params: { error: page.slug, locale: page.localeID },
+				props: {
+					pageData: page,
+					locale: availableLocales.filter(
+						(locale) => locale.id === page.localeID,
+					)[0],
+				},
+			}))
+			.flat(Infinity)
+	);
+}
+
+interface Props {
+	pageData: ErrorPageProps;
+	locale: Locale;
+}
+
+const { pageData, locale } = Astro.props as Props;
+---
+
+<Layout
+	locale={locale}
+	metaData={pageData.metaData}
+	alternativeTranslations={pageData.alternatives}
+	type={pageData.type}
+>
+	<Hero
+		title={pageData.hero.title}
+		chapeau={pageData.hero.chapeau}
+		image={pageData.hero.image}
+		updatedAt={pageData.hero.showUpdatedAt ? pageData.updatedAt : undefined}
+		imageIsPhoto={pageData.hero.isPhoto}
+	>
+		<Breadcrumbs items={pageData.breadcrumbs} slot="prefix" />
+		<ContentBlock value={pageData.hero.content} />
+	</Hero>
+
+	<Layer>
+		<Retain>
+			<Stack gap={14}>
+				<FlexibleButton {...pageData.button} />
+				<div>
+					<Stack gap={4}>
+						{
+							pageData.content ? (
+								<ContentBlock value={pageData.content} />
+							) : null
+						}
+						<p>
+							<code>{pageData.errormessage}</code>
+						</p>
+					</Stack>
+				</div>
+			</Stack>
+		</Retain>
+	</Layer>
+</Layout>

@@ -1,0 +1,51 @@
+---
+import { Mark } from 'astro-portabletext/components';
+import { Modal, Stack } from '@dodo/ui/components';
+import { Link } from '@dodo/ui/elements';
+import type { ImageProps } from 'src/utilities/api/queries';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import type { ContentBlockProps } from '..';
+import ContentBlock from '../ContentBlock.astro';
+import { getLocaleFromURL } from 'src/utilities/locale/translation';
+
+type Props = Parameters<typeof Mark>[0];
+
+interface DialogProps {
+	children: ContentBlockProps['value'];
+	mark: {
+		_key: string;
+		title: string;
+		image: ImageProps;
+		content: ContentBlockProps['value'];
+	};
+}
+
+const props = Astro.props;
+
+const locale = getLocaleFromURL(Astro.url.pathname);
+const siteSettings = await useSiteSettings({ locale });
+
+const { children, mark } = {
+	children: props.node.children,
+	mark: props.node.markDef,
+} as DialogProps;
+---
+
+<Link
+	id={`inline-modal-${mark._key}`}
+	variant="tooltip"
+	hiddenLabel={siteSettings.accessibility.labelModal}
+>
+	<ContentBlock value={children} />
+</Link>
+
+<Modal id={`inline-modal-${mark._key}`} title={mark.title}>
+	<Stack>
+		{
+			mark.image?.src ? (
+				<img src={mark.image.src} alt="" loading="lazy" />
+			) : null
+		}
+		<ContentBlock value={mark.content} />
+	</Stack>
+</Modal>

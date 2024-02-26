@@ -1,0 +1,95 @@
+---
+import { type AlternativeTranslationsProps } from '@dodo/ui/components';
+import { type MetaDataProps, useSiteSettings } from 'src/utilities/api/queries';
+import { type Locale } from 'src/utilities/locale/translation';
+
+export interface Props extends MetaDataProps {
+	locale: Locale;
+	skipPageSuffix?: boolean;
+	alternativeTranslations?: AlternativeTranslationsProps[];
+}
+
+const {
+	title,
+	description,
+	image,
+	locale,
+	skipPageSuffix,
+	noIndex,
+	alternativeTranslations,
+} = Astro.props;
+const siteSettings = await useSiteSettings({ locale });
+
+const currentUrl = Astro.url.toString();
+const urlWithLocale = currentUrl.includes(locale.urlPrefix)
+	? currentUrl
+	: `${currentUrl}${locale.id}`;
+
+const pageTitle = `${title}${
+	skipPageSuffix ? '' : ` | ${siteSettings.pageTitleSuffix}`
+}`;
+
+const ogImage = `${Astro.url.origin}${
+	image.src || siteSettings.socialShareImage.src
+}`;
+---
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+<meta name="version" content={process.env.npm_package_version} />
+<meta name="build-date" content={new Date().toLocaleString('nl-nl')} />
+
+<title>{pageTitle}</title>
+<meta property="og:title" content={pageTitle} />
+<meta name="twitter:title" content={pageTitle} />
+
+{
+	description ? (
+		<>
+			<meta name="description" content={description} />
+			<meta name="twitter:description" content={description} />
+			<meta property="og:description" content={description} />
+		</>
+	) : null
+}
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="og:image" content={ogImage} />
+<meta name="twitter:image" content={ogImage} />
+
+<meta property="og:type" content="website" />
+<meta property="og:url" content={urlWithLocale} />
+<link rel="canonical" href={urlWithLocale} />
+<meta property="og:locale" content={locale.locale} />
+
+{
+	alternativeTranslations
+		? alternativeTranslations.map((alternativeTranslation) => (
+				<>
+					<link
+						rel="alternate"
+						hreflang={alternativeTranslation.locale.hreflang}
+						href={`${siteSettings.baseUrl}${alternativeTranslation.locale.urlPrefix}/${alternativeTranslation.href}`}
+					/>
+					<meta
+						property="og:locale:alternate"
+						content={alternativeTranslation.locale.id}
+					/>
+				</>
+		  ))
+		: null
+}
+
+{noIndex && <meta name="robots" content="noindex" />}
+
+<link rel="icon" href="/images/meta/favicon.ico" sizes="any" />
+<link rel="apple-touch-icon" href="/images/meta/apple-touch-icon.png" />
+<link
+	rel="mask-icon"
+	href="/images/meta/safari-pinned-tab.svg"
+	color="#154273"
+/>
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="msapplication-TileColor" content="#154273" />
+<meta name="theme-color" content="#eef7fb" />

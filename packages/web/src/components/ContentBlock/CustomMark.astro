@@ -1,0 +1,19 @@
+---
+import { Mark } from 'astro-portabletext/components';
+
+import { InlineModal, InlineLink } from './marks';
+
+export type Props = Parameters<typeof Mark>[0];
+
+const props = Astro.props;
+
+const markTypeIs = (markType: string) => markType === props.node.markType;
+
+const Cmp = markTypeIs('link')
+	? InlineLink
+	: markTypeIs('dialog')
+	? InlineModal
+	: Mark;
+---
+
+<Cmp {...props}><slot /></Cmp>

@@ -1,0 +1,194 @@
+---
+import dotenv from 'dotenv';
+
+/** Get the custom set environment */
+const ENV = process.env.ENVIRONMENT || 'development';
+
+/** Use the env based on the passed env value */
+dotenv.config({ path: `.env.${ENV}` });
+
+import MetaData from '@components/MetaData.astro';
+import type { MetaDataProps } from 'src/utilities/api/queries';
+import {
+	setUIGlobalDataFromSiteSettings,
+	useSiteSettings,
+} from 'src/utilities/api/queries';
+import type { Locale } from 'src/utilities/locale/translation';
+
+import '@dodo/ui/styles/globals.scss';
+import {
+	Masthead,
+	SkipLink,
+	type AlternativeTranslationsProps,
+	LocaleSelector,
+} from '@dodo/ui/components';
+import { MastFoot } from '@components/MastFoot';
+import { Finder } from '@components/Finder';
+import type { HTMLAttributes } from 'astro/types';
+import { parseLink } from 'src/utilities/helpers/link';
+import { getFullPageUrl } from 'src/utilities/helpers/page-subfolder';
+import { isExternalUrl } from 'src/utilities/helpers/external-url';
+
+await setUIGlobalDataFromSiteSettings();
+
+export interface Props extends HTMLAttributes<'html'> {
+	type?: string;
+	locale: Locale;
+	alternativeTranslations?: AlternativeTranslationsProps[];
+	metaData: MetaDataProps;
+	skipPageSuffix?: boolean;
+	mastheadHighlight?: boolean;
+	disableMasthead?: boolean;
+	disableMastfoot?: boolean;
+	includeinSearch?: boolean;
+}
+
+const {
+	type,
+	locale,
+	metaData,
+	skipPageSuffix,
+	mastheadHighlight,
+	alternativeTranslations,
+	disableMasthead,
+	disableMastfoot,
+	includeinSearch,
+	...attrs
+} = Astro.props;
+const siteSettings = await useSiteSettings({
+	locale,
+});
+---
+
+<!DOCTYPE html>
+<html
+	{...attrs}
+	lang={locale.hreflang}
+	dir={locale.direction}
+	data-page-type={type}
+	data-page-pathname={Astro.url.pathname}
+>
+	<head>
+		<MetaData
+			{...metaData}
+			locale={locale}
+			skipPageSuffix={skipPageSuffix}
+			alternativeTranslations={alternativeTranslations}
+		/>
+		<style lang="scss" is:global>
+			@use '@dodo/ui/styles/primitives/responsive';
+			@use '@dodo/ui/styles/tools/a11y';
+
+			:where(body) {
+				display: flex;
+				flex-direction: column;
+				@media (--mq-huge-until) {
+					background-color: var(--color-donkerblauw);
+				}
+			}
+
+			:where(main) {
+				position: relative;
+				z-index: 2;
+				display: flex;
+				flex-direction: column;
+				flex: 1;
+				background-color: var(--color-white);
+
+				@media (--mq-huge-until) {
+					transition-property: scale, translate, border-radius, box-shadow;
+					transition-duration: 0.2s;
+					transition-timing-function: ease-out;
+					transform-origin: top right;
+				}
+
+				.has-open-menu & {
+					@media (--mq-huge-until) {
+						scale: 0.71;
+						translate: calc(
+								(var(--theme-main-menu-open-size) + var(--space-6) * 2) * -1
+							)
+							calc(var(--theme__masthead-top-block-size) + var(--space-6));
+						block-size: var(--body-block-size);
+						overflow: hidden;
+						border-radius: var(--radii-base);
+						box-shadow: 0px 0px 27px rgba(0 0 0 / 26%);
+
+						a,
+						button {
+							pointer-events: none;
+						}
+					}
+				}
+			}
+			:lang(ar) {
+				.e-link__label {
+					text-underline-offset: var(--space-s-nano);
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<SkipLink label={siteSettings.masthead.skiplink} />
+		{
+			!disableMasthead ? (
+				<Masthead
+					navigation={{
+						label: siteSettings.masthead?.menu?.menuButtonLabel,
+						items: siteSettings.masthead?.menu?.internalPageCollection
+							? siteSettings.masthead?.menu?.internalPageCollection.map(
+									(page) => {
+										const href = parseLink(getFullPageUrl(page.link), locale);
+										return {
+											label: page.label ? page.label : page.link.label,
+											href,
+											icon: page.icon,
+											isExternal: isExternalUrl(href),
+										};
+									},
+							  )
+							: undefined,
+					}}
+				>
+					<LocaleSelector
+						slot="start"
+						alternativeTranslations={alternativeTranslations}
+					/>
+
+					<Finder slot="end" />
+				</Masthead>
+			) : null
+		}
+
+		<main id="content" data-pagefind-body={includeinSearch ? true : undefined}>
+			<slot />
+			{!disableMastfoot ? <MastFoot locale={locale} /> : null}
+		</main>
+
+		<script src="/scripts/piwik.js" is:inline defer></script>
+		<noscript>
+			<iframe
+				src="//statistiek.rijksoverheid.nl/containers/c754ca66-1c06-4247-ac2d-3b4efb60dcac/noscript.html"
+				height="0"
+				width="0"
+				style={{ border: '0', display: 'none', visibility: 'hidden' }}></iframe>
+		</noscript>
+		<script>
+			import { debounce } from '@dodo/ui/helpers';
+			import checkSize from 'src/utilities/helpers/check-size';
+
+			window.addEventListener('resize', debounce(checkSize));
+
+			checkSize();
+		</script>
+
+		<script>
+			import { trackEvent } from 'src/utilities/tracking/piwik';
+			const pageType = document.querySelector('html').dataset.pageType;
+			const pagePathName = document.querySelector('html').dataset.pagePathName;
+			window.addEventListener('load', function () {
+				trackEvent('Page', pageType, pagePathName);
+			});
+		</script>
+	</body>
+</html>

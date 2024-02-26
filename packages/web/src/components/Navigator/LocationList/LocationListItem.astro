@@ -1,0 +1,173 @@
+---
+import { Tag } from '@dodo/ui/elements';
+import type { HTMLAttributes } from 'astro/types';
+import type { LocationsPageProps } from 'src/utilities/api';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import {
+	getLocaleFromURL,
+	type Locale,
+} from 'src/utilities/locale/translation';
+
+interface Props extends HTMLAttributes<'li'> {
+	isTemplate?: boolean;
+	pageData?: LocationsPageProps;
+}
+
+const { class: className, pageData, isTemplate, ...attrs } = Astro.props;
+const locale = getLocaleFromURL(Astro.url.pathname) as Locale;
+const siteSettings = await useSiteSettings({ locale });
+---
+
+<li
+	class={`c-location-list__item${className ? ` | ${className}` : ''}`}
+	{...attrs}
+	data-item={isTemplate}
+>
+	<button
+		class="c-location-list__button"
+		data-button={isTemplate}
+		type="button"
+	>
+		<span class="c-location-list__title">
+			<strong data-city={isTemplate}></strong>
+			<small class="c-location-list__distance | u-color--grijs-6">
+				<span class="c-location-list__distance-label" data-distance></span>{
+					siteSettings.genericLabels.kilometerAbbr
+				}
+			</small>
+		</span>
+		<span data-name={isTemplate}></span>
+
+		<span
+			data-appointment-type="pza|pma"
+			class="c-location-list__labels"
+			data-labels
+		>
+			<Tag
+				class="c-location-list__label"
+				data-appointment-type="pza"
+				icon="walking"
+			>
+				{siteSettings.appointmentTypes.pza}
+			</Tag>
+			<span class="u-color--black" data-appointment-type="pza&pma">
+				{siteSettings.genericLabels.and}
+			</span>
+			<Tag
+				class="c-location-list__label"
+				data-appointment-type="pma"
+				icon="appointment"
+			>
+				{siteSettings.appointmentTypes.pma}
+			</Tag>
+		</span>
+
+		<small
+			class="c-location-list__opening-hours"
+			data-openinghours
+			data-appointment-type="pza"
+		>
+			<span class="u-color--accent-safarigroen" data-openinghours-opennow>
+				{pageData.location.openingHours.openNow}
+			</span>
+			<span class="u-color--accent-safarigroen" data-openinghours-opentoday>
+				{pageData.location.openingHours.openToday}
+			</span>
+			<span class="u-color--grijs-6" data-openinghours-openfrom>
+				{pageData.location.openingHours.openFrom}{' '}
+				<span data-openinghours-from></span>
+			</span>
+			<span class="u-color--grijs-6" data-openinghours-closed>
+				{pageData.location.openingHours.closed}
+			</span>
+		</small>
+	</button>
+</li>
+
+<style lang="scss">
+	@use '@dodo/ui/styles/primitives/responsive';
+	@use '@dodo/ui/styles/tools/a11y';
+	@use '@dodo/ui/styles/tools/rem';
+
+	/**
+	 * 1. When we auto-scroll to a location we want to make sure the location is
+	 *    in view and not hidden by the fixed filter header.
+	 */
+	.c-location-list__item {
+		--location-list__item-filter-offset: 0px;
+		border-block-end: 1px solid var(--color-grijs-2);
+		scroll-margin-block-start: var(
+			--location-list__item-filter-offset
+		); /* [1] */
+
+		// add outline to the list when the location is a test location
+		&.is-test-location {
+			outline: 1px solid red;
+		}
+
+		@media (--mq-block-small) {
+			& {
+				--location-list__item-filter-offset: var(
+					--navigator__filter-size,
+					#{rem.convert(200px)}
+				); /* [1] */
+			}
+		}
+	}
+
+	.c-location-list__button {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+		inline-size: 100%;
+		padding-block: var(--space-3);
+		padding-inline: var(--space-2);
+		text-align: start;
+		color: var(--color-diepblauw);
+		cursor: pointer;
+		outline: none;
+
+		&:hover,
+		.c-location-list__item.is-active-location & {
+			background-color: var(--color-poolblauw);
+
+			.c-location-list__label {
+				background-color: var(--color-ijsblauw);
+			}
+		}
+
+		&:focus {
+			@include a11y.focusring;
+		}
+	}
+
+	.c-location-list__title {
+		display: flex;
+		align-items: center;
+		flex-flow: row wrap;
+		gap: var(--space-2);
+		inline-size: 100%;
+	}
+
+	.c-location-list__distance {
+		display: none;
+
+		.c-location-list__item.has-distance & {
+			display: block;
+		}
+	}
+
+	.c-location-list__labels {
+		display: flex;
+		gap: var(--space-2);
+	}
+
+	.c-location-list__opening-hours {
+		> span {
+			display: block;
+			&::first-letter {
+				text-transform: uppercase;
+			}
+		}
+	}
+</style>

@@ -1,0 +1,13 @@
+{
+	"extends": ["../../tsconfig.json", "astro/tsconfigs/base"],
+	"compilerOptions": {
+		"composite": true,
+		"baseUrl": ".",
+		"rootDir": ".",
+		"module": "esnext",
+		"paths": {
+			"@components/*": ["./src/components/*"],
+			"@layouts/*": ["./src/layouts/*"]
+		}
+	}
+}

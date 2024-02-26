@@ -1,0 +1,54 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import type { Locale } from 'src/utilities/locale/translation';
+import { availableLocales } from 'src/utilities/locale/translation';
+import {
+	getDataLocationPages,
+	type LocationsPageProps,
+} from 'src/utilities/api';
+import { Navigator } from '@components/Navigator';
+import { getPageSubfolder } from 'src/utilities/helpers/page-subfolder';
+
+export async function getStaticPaths() {
+	const collection = await getDataLocationPages();
+	return collection
+		.filter(
+			(page: LocationsPageProps) =>
+				availableLocales.filter((locale) => locale.id === page.localeID).length,
+		)
+		.map((page: LocationsPageProps) => ({
+			params: {
+				slug: getPageSubfolder(page),
+				locale: page.localeID,
+				locations: page.slug,
+			},
+			props: {
+				pageData: page,
+				locale: availableLocales.filter(
+					(locale) => locale.id === page.localeID,
+				)[0],
+			},
+		}))
+		.flat(Infinity);
+}
+
+interface Props {
+	pageData: LocationsPageProps;
+	locale: Locale;
+}
+
+const { pageData, locale } = Astro.props;
+---
+
+<Layout
+	locale={locale}
+	metaData={pageData.metaData}
+	alternativeTranslations={pageData.alternatives}
+	disableMastfoot
+	type={pageData.type}
+	includeinSearch
+>
+	<Navigator pageData={pageData} />
+</Layout>
+
+<style lang="scss"></style>
