@@ -1,0 +1,189 @@
+---
+import { Stack, FieldInputText } from '@dodo/ui/components';
+import { Control, Icon } from '@dodo/ui/elements';
+import type { HTMLAttributes } from 'astro/types';
+import type { LocationsPageProps } from 'src/utilities/api';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import { getLocaleFromURL } from '@dodo/ui/helpers';
+
+interface Props extends HTMLAttributes<'form'> {
+	pageData: LocationsPageProps;
+}
+
+const { class: className, pageData, ...attrs } = Astro.props;
+const locale = getLocaleFromURL(Astro.url.pathname);
+const siteSettings = await useSiteSettings({
+	locale,
+});
+---
+
+<form
+	class={`c-filter${className ? ` | ${className}` : ''}`}
+	{...attrs}
+	data-module="filter"
+>
+	<Stack>
+		<fieldset class="c-filter__wrap-search">
+			<FieldInputText
+				class="c-filter__geocoder"
+				type="search"
+				id="search"
+				label={pageData.filter.searchLabel}
+				placeholder={`${pageData.filter.searchLabel}…`}
+				icon="looking-glass"
+				clearable
+				hideLabel
+			>
+				<ol
+					data-module-bind="geocoder__list"
+					aria-live="polite"
+					role="list"
+					class="c-filter__geocoder-list"
+				>
+				</ol>
+
+				<template data-module-bind="geocoder__list-item">
+					<li>
+						<button
+							class="c-filter__geocoder-button"
+							type="button"
+							data-module-bind="geocoder__button"
+							role="option"
+							aria-selected="false"
+						>
+							<span data-label></span>
+							<small class="c-filter__geocoder-meta" data-meta></small>
+						</button>
+					</li>
+				</template>
+			</FieldInputText>
+
+			<button
+				class="c-filter__map-toggle"
+				type="button"
+				data-module-bind="navigator__map-toggle"
+			>
+				<span hidden data-list>
+					<Icon name="list" />
+					{siteSettings.genericLabels.list}
+				</span>
+				<span data-map>
+					<Icon name="marker" />
+					{siteSettings.genericLabels.map}
+				</span>
+			</button>
+		</fieldset>
+
+		<fieldset data-filter-toggles hidden>
+			<Stack gap={2}>
+				<div class="c-filter__wrap-controls">
+					<legend class="c-filter__legend">{siteSettings.forms.filterOn}</legend
+					>
+					<div class="c-filter__controls">
+						<Control
+							type="checkbox"
+							name="filter"
+							value="status-open"
+							id="status-open"
+						>
+							{pageData.location.openingHours.openNow}
+						</Control>
+						<Control type="checkbox" name="filter" value="pma" id="pma" hidden>
+							{siteSettings.appointmentTypes.pma}
+						</Control>
+						<Control type="checkbox" name="filter" value="pza" id="pza" hidden>
+							{siteSettings.appointmentTypes.pza}
+						</Control>
+					</div>
+				</div>
+			</Stack>
+		</fieldset>
+	</Stack>
+</form>
+
+<style lang="scss">
+	@use '@dodo/ui/styles/primitives/responsive';
+	@use '@dodo/ui/styles/tools/a11y';
+	@use '@dodo/ui/styles/tools/input';
+
+	.c-filter {
+	}
+
+	.c-filter__wrap-search {
+		display: flex;
+		gap: var(--space-4);
+
+		:global(.c-field-wrapper) {
+			flex: auto;
+		}
+	}
+
+	/**
+	 * Geocoder
+	 */
+	.c-filter__geocoder {
+		position: relative;
+	}
+	.c-filter__geocoder-list {
+		position: absolute;
+		inset-block-start: calc(100% + var(--space-2));
+		inline-size: 100%;
+		border-radius: var(--radii-nano);
+		box-shadow: var(--elevation-frost);
+		font-size: var(--font-size-root);
+		line-height: var(--font-lineheight-root);
+		background-color: var(--color-ijsblauw);
+		z-index: 3;
+	}
+	.c-filter__geocoder-button {
+		display: flex;
+		flex-direction: column;
+		inline-size: 100%;
+		text-align: start;
+		padding-block: var(--space-2);
+		padding-inline: var(--space-4);
+		cursor: pointer;
+
+		&:focus {
+			@include a11y.focusring;
+		}
+
+		&:hover,
+		&:focus {
+			background-color: var(--color-poolblauw);
+		}
+	}
+
+	.c-filter__geocoder-meta {
+		color: var(--color-grijs-6);
+	}
+
+	.c-filter__controls {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-4);
+	}
+
+	.c-filter__legend {
+		--legend-font-size: var(--font-size-root);
+		--legend-line-height: var(--font-lineheight-root);
+	}
+
+	.c-filter__map-toggle {
+		color: var(--color-donkerblauw);
+
+		&:focus {
+			@include a11y.focusring;
+		}
+
+		> span:not([hidden]) {
+			display: flex;
+			align-items: center;
+			gap: var(--space-2);
+		}
+
+		@media (--mq-large) {
+			display: none;
+		}
+	}
+</style>

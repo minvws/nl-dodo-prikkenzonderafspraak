@@ -1,0 +1,81 @@
+---
+import { MarkerIcon } from '@dodo/ui/elements';
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+	openLabel?: string;
+}
+
+const { openLabel, class: className, ...attrs } = Astro.props;
+---
+
+<div class={`c-marker${className ? ` | ${className}` : ''}`} {...attrs}>
+	<button class="c-marker__button" type="button">
+		<span class="u-visually-hidden" data-name></span>
+		{
+			openLabel ? (
+				<span class="c-marker__open" data-is-open>
+					{openLabel}
+				</span>
+			) : null
+		}
+		<MarkerIcon name="map-marker-pza" />
+		<MarkerIcon name="map-marker-pma" />
+	</button>
+</div>
+
+<style lang="scss">
+	@use '@dodo/ui/styles/tools/a11y';
+
+	.c-marker {
+		pointer-events: none;
+		z-index: 2;
+		&.is-open-location,
+		&.is-test-location {
+			z-index: 3;
+		}
+		&.is-active-location {
+			z-index: 4;
+		}
+		&:focus-within,
+		&:has(button:hover),
+		&.is-hovered {
+			z-index: 5;
+		}
+	}
+
+	.c-marker__button {
+		--marker-adjustment: translateY(-40%);
+		position: relative;
+		cursor: pointer;
+		outline: none;
+		transform-origin: bottom center;
+		transform: var(--marker-adjustment);
+		transition: transform 100ms ease-in-out;
+		pointer-events: auto;
+		filter: drop-shadow(0px 0px 4px rgba(0 0 0 /0.2));
+
+		&:focus {
+			@include a11y.focusring;
+		}
+		&:hover {
+			transform: var(--marker-adjustment) scale(1.1);
+		}
+	}
+
+	.c-marker__open {
+		position: absolute;
+		inset-block-start: -0.4em;
+		inset-inline-start: 50%;
+		translate: -50% 0;
+		padding-block: 1px;
+		white-space: nowrap;
+		background-color: var(--color-accent-grasgroen);
+		color: var(--color-white);
+		border-radius: var(--radii-nano);
+		padding-inline: var(--space-1);
+		font-weight: bold;
+		font-size: var(--font-size-nano);
+		line-height: var(--line-height-nano);
+	}
+</style>

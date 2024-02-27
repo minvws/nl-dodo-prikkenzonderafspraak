@@ -1,0 +1,192 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import type { Locale } from 'src/utilities/locale/translation';
+import { availableLocales } from 'src/utilities/locale/translation';
+import type { GenericPageProps } from 'src/utilities/api';
+import { getDataGenericPages } from 'src/utilities/api';
+import {
+	Hero,
+	Retain,
+	Layer,
+	Card,
+	Stack,
+	Assistance,
+	MoreInfoOverview,
+	Breadcrumbs,
+} from '@dodo/ui/components';
+import { ContentBlock } from '@components/ContentBlock';
+import { TaleList } from '@components/Tale';
+import { stringToSlug } from 'src/utilities/stringToSlug';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import { Heading } from '@dodo/ui/elements';
+import {
+	getFullPageUrl,
+	getPageSubfolder,
+} from 'src/utilities/helpers/page-subfolder';
+import { getFeedbackUrl } from 'src/utilities/tracking/feedback';
+import { parseLink } from 'src/utilities/helpers/link';
+import { isExternalUrl } from 'src/utilities/helpers/external-url';
+import { FeedbackAbstraction } from '@components/FeedbackAbstraction';
+
+export async function getStaticPaths() {
+	const collection = await getDataGenericPages();
+	return (
+		collection
+			// filter out unavailable locales
+			.filter(
+				(page: GenericPageProps) =>
+					availableLocales.filter((locale) => locale.id === page.localeID)
+						.length,
+			)
+			.map((page: GenericPageProps) => ({
+				params: {
+					slug: getPageSubfolder(page),
+					generic: page.slug,
+					locale: page.localeID,
+				},
+				props: {
+					pageData: page,
+					locale: availableLocales.filter(
+						(locale) => locale.id === page.localeID,
+					)[0],
+				},
+			}))
+			.flat(Infinity)
+	);
+}
+
+interface Props {
+	pageData: GenericPageProps;
+	locale: Locale;
+}
+
+const { pageData, locale } = Astro.props;
+const siteSettings = await useSiteSettings({ locale });
+---
+
+<Layout
+	locale={locale}
+	metaData={pageData.metaData}
+	alternativeTranslations={pageData.alternatives}
+	type={pageData.type}
+	includeinSearch
+	itemscope
+	itemtype="https://schema.org/FAQPage"
+>
+	<Hero
+		title={pageData.hero.title}
+		chapeau={pageData.hero.chapeau}
+		image={pageData.hero.image}
+		updatedAt={pageData.hero.showUpdatedAt ? pageData.updatedAt : undefined}
+		imageIsPhoto={pageData.hero.isPhoto}
+	>
+		<Breadcrumbs items={pageData.breadcrumbs} slot="prefix" />
+		<ContentBlock value={pageData.hero.content} />
+	</Hero>
+
+	<Layer>
+		<Retain>
+			<Retain variant="text">
+				<Stack gap={14}>
+					{
+						pageData.content ? (
+							<div>
+								<Stack gap={4}>
+									<ContentBlock value={pageData.content} />
+								</Stack>
+							</div>
+						) : null
+					}
+
+					{
+						pageData?.taleCollection?.length ? (
+							<TaleList
+								taleCollection={pageData.taleCollection}
+								asDisclosure={pageData.talesAsDisclosure}
+							/>
+						) : null
+					}
+
+					{
+						pageData?.moreInfo?.items?.filter((item) => item?.slug)?.length ? (
+							<section data-pagefind-ignore="all">
+								<Stack>
+									<Heading level={2}>
+										{pageData.moreInfo.title
+											? pageData.moreInfo.title
+											: siteSettings.genericLabels.moreInfo}
+									</Heading>
+									<MoreInfoOverview
+										items={pageData.moreInfo.items.map((item) => {
+											const href = parseLink(getFullPageUrl(item), locale);
+											return {
+												label: item?.overview?.title || item.title,
+												image: item?.overview?.icon || item.icon,
+												href: href,
+												isExternal: isExternalUrl(href),
+											};
+										})}
+									/>
+								</Stack>
+							</section>
+						) : null
+					}
+
+					{
+						pageData?.sources?.content ? (
+							<section
+								id={stringToSlug(
+									pageData.sources.title
+										? pageData.sources.title
+										: siteSettings.genericLabels.sources,
+								)}
+							>
+								<Card variant="filled">
+									<Stack>
+										<Heading level={2}>
+											{pageData.sources.title
+												? pageData.sources.title
+												: siteSettings.genericLabels.sources}
+										</Heading>
+										<ContentBlock value={pageData.sources.content} />
+									</Stack>
+								</Card>
+							</section>
+						) : null
+					}
+
+					{
+						pageData?.showFeedback ? (
+							<FeedbackAbstraction
+								name="Situatie Advies"
+								url={getFeedbackUrl(siteSettings.feedback.url, {
+									source: 'generic-page',
+									advice: pageData.slug,
+								})}
+							/>
+						) : null
+					}
+				</Stack>
+			</Retain>
+		</Retain>
+	</Layer>
+	{
+		pageData.assistance && pageData.assistance.type === 'assistance-new' ? (
+			<Layer
+				id={stringToSlug(pageData.assistance.title)}
+				background={'ijsblauw'}
+				pushDownBy="assistance-image"
+			>
+				<Retain>
+					<Assistance
+						feedback={getFeedbackUrl(siteSettings.feedback.url, {
+							source: pageData.type,
+							advice: pageData.slug,
+						})}
+						{...pageData.assistance}
+					/>
+				</Retain>
+			</Layer>
+		) : null
+	}
+</Layout>

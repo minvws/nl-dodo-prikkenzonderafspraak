@@ -1,0 +1,57 @@
+---
+import { Heading } from '@dodo/ui/elements';
+import { Card, Stack } from '@dodo/ui/components';
+import { getLocaleFromURL } from 'src/utilities/locale/translation';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import { Icon as AstroIcon } from 'astro-icon/components';
+
+interface Props {}
+
+const {} = Astro.props;
+const locale = getLocaleFromURL(Astro.url.pathname);
+const siteSettings = await useSiteSettings({ locale });
+---
+
+<Card variant="frost" class="c-card-privacy" data-pagefind-ignore="all">
+	<Stack>
+		<Heading>{siteSettings.privacy.title}</Heading>
+		<ul class="c-card-privacy__list" role="list">
+			{
+				siteSettings.privacy.beloftes.map((belofte) => (
+					<li>
+						<AstroIcon class="c-card-privacy__icon" name="privacy-shield" />
+						<span class="c-card-privacy__label">{belofte}</span>
+					</li>
+				))
+			}
+		</ul>
+	</Stack>
+</Card>
+
+<style lang="scss">
+	@use '@dodo/ui/styles/tools/rem';
+
+	.c-card-privacy {
+		--card-privacy-icon-size: #{rem.convert(28px)};
+	}
+	.c-card-privacy__list {
+		> li {
+			position: relative;
+			padding-inline-start: var(--space-14);
+			& + li {
+				margin-block-start: var(--space-4);
+			}
+		}
+	}
+
+	.c-card-privacy__label {
+	}
+
+	.c-card-privacy__icon {
+		position: absolute;
+		inset-inline-start: 0;
+		inline-size: var(--card-privacy-icon-size);
+		block-size: rem.convert(34px);
+		color: var(--color-accent-gifgroen);
+	}
+</style>

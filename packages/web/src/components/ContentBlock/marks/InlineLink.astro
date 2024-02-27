@@ -1,0 +1,52 @@
+---
+import { Mark } from 'astro-portabletext/components';
+import { Link, Button } from '@dodo/ui/elements';
+import { type ContentBlockProps } from '..';
+import ContentBlock from '../ContentBlock.astro';
+import { getLocaleFromURL } from 'src/utilities/locale/translation';
+import { type SubFolderReferenceProps } from 'src/utilities/api/queries';
+import { getFullPageUrl } from 'src/utilities/helpers/page-subfolder';
+import { parseLink } from 'src/utilities/helpers/link';
+import { isExternalUrl } from 'src/utilities/helpers/external-url';
+
+type Props = Parameters<typeof Mark>[0];
+
+interface MarkProps {
+	children: ContentBlockProps['value'];
+	type: string;
+	node?: {
+		style: string;
+	};
+	mark?: {
+		href?: string;
+		slugCollection?: {
+			slug: string;
+			subFolderReference: SubFolderReferenceProps;
+		};
+		chevron?: boolean;
+		internal?: boolean;
+		button?: boolean;
+	};
+}
+
+const props = Astro.props;
+
+const { children, mark } = {
+	children: props.node.children,
+	mark: props.node.markDef,
+	type: props.node.markType,
+} as MarkProps;
+
+const locale = getLocaleFromURL(Astro.url.pathname);
+const Component = mark.button ? Button : Link;
+const href = mark.slugCollection
+	? parseLink(getFullPageUrl(mark.slugCollection), locale)
+	: mark.href
+	? parseLink(mark.href, locale)
+	: undefined;
+const isExternal = isExternalUrl(href);
+---
+
+<Component href={href} isExternal={isExternal}>
+	<ContentBlock value={children} />
+</Component>

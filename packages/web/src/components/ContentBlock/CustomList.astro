@@ -1,0 +1,9 @@
+---
+import { List } from 'astro-portabletext/components';
+
+export type Props = Parameters<typeof List>[0];
+
+const props = Astro.props;
+---
+
+<List {...props}><slot /></List>

@@ -1,0 +1,69 @@
+---
+import { ContentBlock } from '@components/ContentBlock';
+import { Picture, Stack, Video } from '@dodo/ui/components';
+import { type MultiContentBlocksProps } from 'src/utilities/api/queries';
+
+import {
+	isContent,
+	isPicture,
+	isButton,
+	isVideo,
+} from 'src/utilities/api/queries';
+import { FlexibleButton } from '@components/elements/FlexibleButton';
+
+interface Props {
+	multiContentBlocks: MultiContentBlocksProps;
+}
+
+const { multiContentBlocks } = Astro.props;
+---
+
+<Stack class="c-multi-content-block" gap={4}>
+	{
+		multiContentBlocks.map((multiContentBlock) => (
+			<>
+				{isContent(multiContentBlock) ? (
+					<Stack class="c-multi-content-block__content" gap={4}>
+						<ContentBlock value={multiContentBlock.content} />
+					</Stack>
+				) : isButton(multiContentBlock) ? (
+					<FlexibleButton
+						className="c-multi-content-block__button"
+						{...multiContentBlock}
+					/>
+				) : isVideo(multiContentBlock) ? (
+					<Video
+						title={multiContentBlock.title}
+						url={multiContentBlock.url}
+						image={multiContentBlock.picture.image}
+					/>
+				) : isPicture(multiContentBlock) ? (
+					<Picture
+						class="c-multi-content-block__picture"
+						{...multiContentBlock}
+					/>
+				) : null}
+			</>
+		))
+	}
+</Stack>
+
+<style lang="scss">
+	.c-multi-content-block {
+	}
+
+	.c-multi-content-block__content {
+	}
+
+	.c-multi-content-block__button {
+		display: flex;
+		inline-size: fit-content;
+	}
+
+	.c-multi-content-block__picture {
+		:global(img) {
+			max-inline-size: 100%;
+			margin-inline: auto;
+		}
+	}
+</style>

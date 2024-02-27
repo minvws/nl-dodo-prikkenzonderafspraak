@@ -1,0 +1,9 @@
+# build artefacts
+packages/**/dist
+**/.sanity/**/*
+
+# public
+packages/cms/static/world.topojson.json
+
+# mdx files
+*.mdx

@@ -1,0 +1,161 @@
+---
+import Layout from '@layouts/Layout.astro';
+import {
+	type Locale,
+	availableLocales,
+} from 'src/utilities/locale/translation';
+import type { PageHomeProps } from 'src/utilities/api';
+import { getDataHome } from 'src/utilities/api';
+import {
+	Assistance,
+	Hero,
+	Layer,
+	Retain,
+	Sidebar,
+	Stack,
+} from '@dodo/ui/components';
+import { ContentBlock } from '@components/ContentBlock';
+import { FlexibleButton } from '@components/elements/FlexibleButton';
+import { stringToSlug } from 'src/utilities/stringToSlug';
+import { getFeedbackUrl } from 'src/utilities/tracking/feedback';
+import { useSiteSettings } from 'src/utilities/api/queries';
+import { TaleList } from '@components/Tale';
+import { CardPrivacy } from '@components/Card';
+import { FeedbackAbstraction } from '@components/FeedbackAbstraction';
+
+export async function getStaticPaths() {
+	const collection = await getDataHome();
+	return (
+		collection
+			// filter out unavailable locales
+			.filter(
+				(page: PageHomeProps) =>
+					availableLocales.filter((locale) => locale.id === page.localeID)
+						.length,
+			)
+			.map((page: PageHomeProps) => ({
+				params: {
+					locale: page.localeID,
+				},
+				props: {
+					pagesData: collection,
+					locale: availableLocales.filter(
+						(locale) => locale.id === page.localeID,
+					)[0],
+				},
+			}))
+			.flat(Infinity)
+	);
+}
+
+interface Props {
+	locale: Locale;
+	pagesData?: PageHomeProps[];
+}
+
+const { locale, pagesData } = Astro.props;
+
+// Get pagedata based on locale
+const pageData: PageHomeProps = pagesData.filter(
+	(page) => page.localeID === locale.id,
+)[0];
+
+const siteSettings = await useSiteSettings({ locale });
+---
+
+<Layout
+	locale={locale}
+	metaData={pageData.metaData}
+	skipPageSuffix
+	mastheadHighlight
+	alternativeTranslations={pageData.alternatives}
+	type={pageData.type}
+>
+	<Hero
+		title={pageData.hero.title}
+		chapeau={pageData.hero.chapeau}
+		image={pageData.hero.image}
+		updatedAt={pageData.hero.showUpdatedAt ? pageData.updatedAt : undefined}
+		variant="highlight"
+		imageIsPhoto={pageData.hero.isPhoto}
+	>
+		<Stack class="c-hero__content">
+			<Stack class="has__list-styled">
+				<ContentBlock value={pageData.hero.content} />
+			</Stack>
+			{
+				pageData.buttons ? (
+					<ul class="c-hero__wrap-buttons" role="list">
+						{pageData.buttons.map((button) => (
+							<li>
+								<FlexibleButton {...button} />
+							</li>
+						))}
+					</ul>
+				) : null
+			}
+			{
+				pageData.contentSecondary ? (
+					<Stack class="has__list-styled">
+						<ContentBlock value={pageData.contentSecondary} />
+					</Stack>
+				) : null
+			}
+		</Stack>
+	</Hero>
+
+	{
+		pageData.taleCollection ? (
+			<Layer pullUpBy={'hero'}>
+				<Retain>
+					<Sidebar>
+						<Stack gap={14}>
+							<TaleList taleCollection={pageData.taleCollection} />
+							{pageData?.showFeedback ? (
+								<FeedbackAbstraction
+									name="Prikken Home"
+									url={getFeedbackUrl(siteSettings.feedback.url, {
+										source: pageData.type,
+										advice: undefined,
+									})}
+								/>
+							) : null}
+						</Stack>
+						<Stack slot="aside">
+							<CardPrivacy />
+						</Stack>
+					</Sidebar>
+				</Retain>
+			</Layer>
+		) : null
+	}
+
+	{
+		pageData.assistance ? (
+			<Layer
+				id={stringToSlug(pageData.assistance.title)}
+				background={'ijsblauw'}
+				pushDownBy="assistance-image"
+			>
+				<Retain>
+					<Assistance
+						feedback={getFeedbackUrl(siteSettings.feedback.url, {
+							source: pageData.type,
+							advice: undefined,
+						})}
+						{...pageData.assistance}
+					/>
+				</Retain>
+			</Layer>
+		) : null
+	}
+</Layout>
+
+<style lang="scss">
+	@use '@dodo/ui/styles/tools/list';
+	.c-hero__wrap-buttons {
+		display: flex;
+		flex-flow: row wrap;
+		gap: var(--space-4);
+	}
+</style>

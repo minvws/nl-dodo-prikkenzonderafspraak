@@ -1,0 +1,34 @@
+---
+import { type Tale as TaleProps } from 'src/utilities/api/queries';
+import { MultiContentBlock } from '@components/ContentBlock';
+import { Tale } from '@dodo/ui/components';
+import { stringToSlug } from 'src/utilities/stringToSlug';
+
+interface Props extends TaleProps {
+	anchorable?: boolean;
+	renderTitle?: boolean;
+	isCampaign?: boolean;
+}
+
+const {
+	title,
+	multiContentBlocks,
+	picture,
+	renderTitle = true,
+	anchorable = true,
+	isCampaign,
+} = Astro.props;
+---
+
+<Tale
+	title={title}
+	id={anchorable ? stringToSlug(title) : undefined}
+	renderTitle={renderTitle}
+	picture={!isCampaign && picture?.image?.src ? picture : undefined}
+>
+	{
+		multiContentBlocks ? (
+			<MultiContentBlock multiContentBlocks={multiContentBlocks} />
+		) : null
+	}
+</Tale>

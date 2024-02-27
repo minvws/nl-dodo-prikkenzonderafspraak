@@ -1,0 +1,12 @@
+---
+import { getDataHome } from 'src/utilities/api';
+import { availableLocales } from 'src/utilities/locale/translation';
+import IndexPage from './[locale]/index.astro';
+
+const pagesData = await getDataHome();
+---
+
+<IndexPage
+	locale={availableLocales.filter((locale) => locale.id === 'nl')[0]}
+	pagesData={pagesData}
+/>
