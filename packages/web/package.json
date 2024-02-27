@@ -34,7 +34,7 @@
 		"uuid": "^9.0.1"
 	},
 	"dependencies": {
-		"@dodo/ui": "git+https://github.com/minvws/nl-dodo-ui.git#de8bf23eb37f852f2c76a54c5f827acb6b0a3278",
+		"@dodo/ui": "git+https://github.com/minvws/nl-dodo-ui.git#semver:^1.0.0",
 		"@turf/turf": "^6.5.0",
 		"astro-pagefind": "^1.4.0",
 		"copy-to-clipboard": "^3.3.3",
